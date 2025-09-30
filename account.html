@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Account Management</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="firebase-init.js"></script>
+</head>
+<body>
+  <h1>Manage Your Account</h1>
+  <p id="user-email">Email: </p>
+
+  <!-- Change password -->
+  <h3>Change Password</h3>
+  <form id="password-form">
+    <input type="password" id="new-password" placeholder="New password" required>
+    <button type="submit">Update Password</button>
+  </form>
+
+  <!-- Delete account -->
+  <h3>Delete Account</h3>
+  <button id="delete-account-btn">Delete My Account</button>
+
+  <!-- Logout -->
+  <h3>Logout</h3>
+  <button id="logout-btn">Logout</button>
+
+  <button onclick="window.location.href='index.html';">Back to Home</button>
+
+  <script type="module">
+    import { auth, db } from "./firebase-init.js";
+    import { onAuthStateChanged, updatePassword, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { ref, remove, push } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+    const emailText = document.getElementById("user-email");
+    const passwordForm = document.getElementById("password-form");
+    const deleteBtn = document.getElementById("delete-account-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) window.location.href = "login.html";
+      emailText.textContent = "Email: " + user.email;
+    });
+
+    // Change password
+    passwordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const newPass = document.getElementById("new-password").value;
+      try {
+        await updatePassword(auth.currentUser, newPass);
+        alert("Password updated!");
+        passwordForm.reset();
+      } catch (err) {
+        alert("Error updating password: " + err.message);
+      }
+    });
+
+    // Delete account
+    deleteBtn.addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
+      try {
+        await remove(ref(db, "users/" + auth.currentUser.uid));
+        await deleteUser(auth.currentUser);
+        alert("Account deleted!");
+        window.location.href = "login.html";
+      } catch (err) {
+        alert("Error deleting account: " + err.message);
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        if (auth.currentUser) {
+          await push(ref(db, "logs/" + auth.currentUser.uid), {
+            action: "Logged out",
+            time: new Date().toISOString()
+          });
+        }
+        await signOut(auth);
+        window.location.href = "login.html";
+      } catch (err) {
+        alert("Logout failed: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

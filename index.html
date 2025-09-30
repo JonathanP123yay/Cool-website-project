@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jonathan's Stuff</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="firebase-init.js"></script>
+</head>
+<body>
+  <h1>Welcome Jonathan!</h1>
+
+  <!-- Navigation Buttons -->
+  <button onclick="window.location.href='https://google.com';">Open Google</button>
+  <button onclick="window.location.href='https://clever.com';">Head Back to Clever</button>
+  <button onclick="window.location.href='launcher.html';">Launcher</button>
+
+  <!-- Website opener -->
+  <h3>Open up a website:</h3>
+  <form id="website-form">
+    <label for="website">Enter website URL:</label><br>
+    <input type="text" id="website" name="website" placeholder="Website URL">
+    <button id="enter-btn" type="submit">Enter</button>
+  </form>
+
+  <!-- Questionnaire popup (hidden by default) -->
+  <div id="questionnaire-popup" style="display:none; position:fixed; top:20%; left:30%; width:40%; background:white; border:2px solid black; padding:20px; z-index:999;">
+    <h2>Quick Questionnaire</h2>
+    <p>Please answer this before continuing:</p>
+    <form id="questionnaire-form">
+      <label>What's your favorite color?</label><br>
+      <input type="text" id="favColor" required><br><br>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Manage Account button at bottom -->
+  <button style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%);" onclick="window.location.href='account.html';">Manage Account</button>
+
+  <script type="module">
+    import { auth, db } from "./firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { ref, push, set, get } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+    const popup = document.getElementById("questionnaire-popup");
+
+    // Redirect if not logged in and show questionnaire
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) window.location.href = "login.html";
+
+      const userRef = ref(db, "users/" + user.uid + "/questionnaireDone");
+      const snap = await get(userRef);
+      if (!snap.exists() || snap.val() !== true) popup.style.display = "block";
+    });
+
+    // Website form
+    document.getElementById("website-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const url = document.getElementById("website").value;
+      if (!url) return;
+      const fullUrl = url.startsWith("http") ? url : "https://" + url;
+      window.location.href = fullUrl;
+
+      if (auth.currentUser) {
+        await push(ref(db, "logs/" + auth.currentUser.uid), {
+          action: "Visited " + fullUrl,
+          time: new Date().toISOString()
+        });
+      }
+    });
+
+    // Questionnaire form
+    document.getElementById("questionnaire-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const favColor = document.getElementById("favColor").value;
+      if (auth.currentUser) {
+        await set(ref(db, "users/" + auth.currentUser.uid + "/questionnaire"), {
+          favColor,
+          completedAt: new Date().toISOString()
+        });
+        await set(ref(db, "users/" + auth.currentUser.uid + "/questionnaireDone"), true);
+      }
+      popup.style.display = "none";
+      alert("Thanks for completing the questionnaire!");
+    });
+  </script>
+</body>
+</html>

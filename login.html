@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Jonathan's Stuff</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="firebase-init.js"></script>
+</head>
+<body>
+  <h1>Login to Jonathan's Stuff</h1>
+
+  <form id="login-form">
+    <label for="email">Email:</label><br>
+    <input type="email" id="email" placeholder="Enter your email" required><br><br>
+    
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" placeholder="Enter your password" required><br><br>
+    
+    <button type="submit">Login</button>
+  </form>
+
+  <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
+
+  <script type="module">
+    import { auth } from "./firebase-init.js";
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+
+    const loginForm = document.getElementById("login-form");
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = "index.html"; // Redirect after login
+      } catch (err) {
+        alert("Login failed: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
